@@ -8,10 +8,21 @@ const ioasysApi = axios.create({
 
 const routes = new Router();
 
+const defaultHeaders = {
+  Accept: '*/*',
+  'Cache-Control': 'no-cache',
+  Host: 'empresas.ioasys.com.br',
+  'Accept-Encoding': 'gzip, deflate',
+  Cookie:
+    '_sturtup-games-backend_session=OWpvZHlDVEdNNi9pdEZ6bDUwWDhVamttRkFFZGlJS1R1Y3ViaG5xNjI5MkUxM09FcGNtdTNncnpwMUtBUmZnYi9reVdZa3J1NTdkOEZGZkZ0UGxTa3VOYnNadGRRRkd0cmV5MmdyODcwdmpWeGpkRldseklqUGtTTWZJbXZhUGFRQkRqZ0Z5MzRSbFBGbG5sbEI1NWhBPT0tLTlRaGEzRVpBb1ZJWGxlTisxS1dTdFE9PQ%3D%3D--fcbafbb9a2925bcce2a093f6945a6ccb396a6c60',
+  Connection: 'keep-alive'
+};
+
 routes.post('/users/auth/sign_in', async (req, res) => {
   try {
     const response = await ioasysApi.post('/users/auth/sign_in', req.body, {
       timeout: 1000 * 60 * 4,
+      headers: { ...defaultHeaders },
       httpsAgent: new https.Agent({
         rejectUnauthorized: false
       })
@@ -27,9 +38,13 @@ routes.post('/users/auth/sign_in', async (req, res) => {
       })
       .json(response.data);
   } catch (error) {
+    console.log(error);
+
     const { response } = error;
 
-    return res.status(response.status).json(response.data);
+    return res
+      .status(response ? response.status : 500)
+      .json(response ? response.data : error.code);
   }
 });
 
@@ -48,6 +63,7 @@ routes.get('/enterprises', async (req, res) => {
     const response = await ioasysApi.get('/enterprises', {
       params: req.query,
       headers: {
+        ...defaultHeaders,
         uid: req.headers.uid,
         client: req.headers.client,
         'access-token': req.headers['access-token']
@@ -64,7 +80,9 @@ routes.get('/enterprises', async (req, res) => {
 
     const { response } = error;
 
-    return res.status(response.status).json(response.data);
+    return res
+      .status(response ? response.status : 500)
+      .json(response ? response.data : error.code);
   }
 });
 
