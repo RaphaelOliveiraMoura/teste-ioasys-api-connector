@@ -6,6 +6,19 @@ const ioasysApi = axios.create({
   baseURL: process.env.API_IOASYS_URL
 });
 
+ioasysApi.interceptors.response.use(
+  response => response,
+  error => {
+    if (error.code === 'ETIMEDOUT') {
+      console.log('Timeout, resend request...');
+
+      return ioasysApi(error.config);
+    } else {
+      return Promise.reject(error);
+    }
+  }
+);
+
 const routes = new Router();
 
 const defaultHeaders = {
@@ -21,7 +34,7 @@ const defaultHeaders = {
 routes.post('/users/auth/sign_in', async (req, res) => {
   try {
     const response = await ioasysApi.post('/users/auth/sign_in', req.body, {
-      timeout: 1000 * 60 * 4,
+      timeout: 1000 * 60,
       headers: { ...defaultHeaders },
       httpsAgent: new https.Agent({
         rejectUnauthorized: false
@@ -38,13 +51,13 @@ routes.post('/users/auth/sign_in', async (req, res) => {
       })
       .json(response.data);
   } catch (error) {
-    console.log(error);
+    const { response: errorResponse } = error;
 
-    const { response } = error;
+    if (errorResponse && errorResponse.status === 401) {
+      return res.status(401).json(errorResponse.data);
+    }
 
-    return res
-      .status(response ? response.status : 500)
-      .json(response ? response.data : error.code);
+    return res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 
@@ -68,7 +81,7 @@ routes.get('/enterprises', async (req, res) => {
         client: req.headers.client,
         'access-token': req.headers['access-token']
       },
-      timeout: 1000 * 60 * 4,
+      timeout: 1000 * 60,
       httpsAgent: new https.Agent({
         rejectUnauthorized: false
       })
@@ -76,13 +89,53 @@ routes.get('/enterprises', async (req, res) => {
 
     return res.json(response.data);
   } catch (error) {
+    const { response: errorResponse } = error;
+
     console.log(error);
 
-    const { response } = error;
+    if (errorResponse && errorResponse.status === 401) {
+      return res.status(401).json(errorResponse.data);
+    }
 
-    return res
-      .status(response ? response.status : 500)
-      .json(response ? response.data : error.code);
+    return res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+routes.get('/enterprises/:id', async (req, res) => {
+  try {
+    if (
+      !req.headers.uid ||
+      !req.headers.client ||
+      !req.headers['access-token']
+    ) {
+      return res
+        .status(400)
+        .json({ message: 'You need provide headers auth params' });
+    }
+
+    const response = await ioasysApi.get(`/enterprises/${req.params.id}`, {
+      params: req.query,
+      headers: {
+        ...defaultHeaders,
+        uid: req.headers.uid,
+        client: req.headers.client,
+        'access-token': req.headers['access-token']
+      },
+      timeout: 1000 * 60,
+      httpsAgent: new https.Agent({
+        rejectUnauthorized: false
+      })
+    });
+
+    return res.json(response.data);
+  } catch (error) {
+    const { response: errorResponse } = error;
+
+    if (errorResponse && errorResponse.status === 401) {
+      return res.status(401).json(errorResponse.data);
+    }
+
+    return res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 
