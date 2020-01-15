@@ -12,7 +12,7 @@
 **Clonando o projeto**
 
 ```
-  ~ git clone https://github.com/RaphaelOliveiraMoura/teste-ioasys-api-gatwey.git
+  ~ git clone https://github.com/RaphaelOliveiraMoura/teste-ioasys-api-connector.git
 ```
 
 **Instalando dependências**
