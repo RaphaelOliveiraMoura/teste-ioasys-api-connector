@@ -13,6 +13,8 @@
 
 ```
   ~ git clone https://github.com/RaphaelOliveiraMoura/teste-ioasys-api-connector.git
+  or
+  ~ git clone https://bitbucket.org/RaphaelOliveiraMoura/empresas-connector.git
 ```
 
 **Instalando dependências**
